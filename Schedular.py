@@ -34,10 +34,10 @@ def train_model(hours_free, tasks):
 
             if action < len(tasks):
                 task = tasks[action]
-                reward = reward_function(task, action, state)
+                reward = reward_function(task, action, state, tasks)  # Pass tasks here
                 state_prime = state - task["duration"] if state >= task["duration"] else state
             else:
-                reward = reward_function(None, action, state)
+                reward = reward_function(None, action, state, tasks)  # Pass tasks here
                 state_prime = state - 1
 
             Q_table[state, action] += alpha * (
@@ -46,6 +46,7 @@ def train_model(hours_free, tasks):
             state = state_prime
 
     return Q_table
+
 
 # Recommend tasks based on Q-table
 def recommend_tasks(Q_table, tasks, hours_free):
