@@ -114,56 +114,63 @@ if page == "Information":
 elif page == "Task Scheduler":
     st.title("Task Scheduler")
     
-    # User Inputs
+    # User Inputs (handling session state for persistence)
+    if 'start_time' not in st.session_state:
+        st.session_state.start_time = 9
+        st.session_state.end_time = 17
+        st.session_state.hours_free = st.session_state.end_time - st.session_state.start_time
+        st.session_state.tasks = []
+
+    # Sidebar User Input
     st.sidebar.header("Your Available Time")
-    start_time = st.sidebar.number_input("Start Hour (24-hour format)", min_value=0, max_value=23, value=9)
-    end_time = st.sidebar.number_input("End Hour (24-hour format)", min_value=0, max_value=23, value=17)
-    hours_free = end_time - start_time
+    st.session_state.start_time = st.sidebar.number_input("Start Hour (24-hour format)", min_value=0, max_value=23, value=st.session_state.start_time)
+    st.session_state.end_time = st.sidebar.number_input("End Hour (24-hour format)", min_value=0, max_value=23, value=st.session_state.end_time)
+    st.session_state.hours_free = st.session_state.end_time - st.session_state.start_time
     
     st.sidebar.header("Your Tasks")
-    num_tasks = st.sidebar.number_input("Number of Tasks", min_value=1, max_value=10, value=3)
-    tasks = []
+    num_tasks = st.sidebar.number_input("Number of Tasks", min_value=1, max_value=10, value=len(st.session_state.tasks))
+    st.session_state.tasks = []  # Reset tasks if user changes task count
     for i in range(num_tasks):
-        name = st.sidebar.text_input(f"Task {i + 1} Name", f"Task {i + 1}")
-        duration = st.sidebar.number_input(f"Task {i + 1} Duration (hours)", min_value=1, max_value=hours_free, value=1)
-        priority = st.sidebar.slider(f"Task {i + 1} Priority (1-10)", min_value=1, max_value=10, value=5)
-        tasks.append({"name": name, "priority": priority, "duration": duration, "due_in": hours_free})
-    
-    # Train Model
+        name = st.sidebar.text_input(f"Task {i + 1} Name", value=f"Task {i + 1}" if len(st.session_state.tasks) <= i else st.session_state.tasks[i]["name"])
+        duration = st.sidebar.number_input(f"Task {i + 1} Duration (hours)", min_value=1, max_value=st.session_state.hours_free, value=1 if len(st.session_state.tasks) <= i else st.session_state.tasks[i]["duration"])
+        priority = st.sidebar.slider(f"Task {i + 1} Priority (1-10)", min_value=1, max_value=10, value=5 if len(st.session_state.tasks) <= i else st.session_state.tasks[i]["priority"])
+        st.session_state.tasks.append({"name": name, "priority": priority, "duration": duration, "due_in": st.session_state.hours_free})
+
+    # Button to generate initial schedule
     if st.sidebar.button("Generate Schedule"):
-        Q_table = train_model(hours_free, tasks)
-        schedule = recommend_tasks(Q_table, tasks, hours_free)
+        Q_table = train_model(st.session_state.hours_free, st.session_state.tasks)
+        schedule = recommend_tasks(Q_table, st.session_state.tasks, st.session_state.hours_free)
         
         # Display Schedule
         st.header("Recommended Schedule")
         for hour, task in enumerate(schedule):
-            st.write(f"Hour {start_time + hour}: {task}")
+            st.write(f"Hour {st.session_state.start_time + hour}: {task}")
         
         # Q-Table Heatmap
         st.header("Q-Table Visualization")
         st.image(plot_q_table(Q_table), use_column_width=True)
 
-    # Update Schedule
+    # Button to update schedule
     if st.sidebar.button("Update Schedule"):
         st.sidebar.header("Update Options")
         update_option = st.sidebar.selectbox("Choose an update option", ["Mark Task as Done", "Adjust Available Time"])
         
         if update_option == "Mark Task as Done":
             done_task = st.sidebar.text_input("Enter the name of the completed task")
-            tasks = [task for task in tasks if task["name"] != done_task]
+            st.session_state.tasks = [task for task in st.session_state.tasks if task["name"] != done_task]
         
         elif update_option == "Adjust Available Time":
-            new_start_time = st.sidebar.number_input("New Start Hour (24-hour format)", min_value=0, max_value=23, value=start_time)
-            new_end_time = st.sidebar.number_input("New End Hour (24-hour format)", min_value=0, max_value=23, value=end_time)
-            hours_free = new_end_time - new_start_time
-            start_time = new_start_time
-            end_time = new_end_time
+            new_start_time = st.sidebar.number_input("New Start Hour (24-hour format)", min_value=0, max_value=23, value=st.session_state.start_time)
+            new_end_time = st.sidebar.number_input("New End Hour (24-hour format)", min_value=0, max_value=23, value=st.session_state.end_time)
+            st.session_state.hours_free = new_end_time - new_start_time
+            st.session_state.start_time = new_start_time
+            st.session_state.end_time = new_end_time
         
         # Recalculate Schedule
-        Q_table = train_model(hours_free, tasks)
-        schedule = recommend_tasks(Q_table, tasks, hours_free)
+        Q_table = train_model(st.session_state.hours_free, st.session_state.tasks)
+        schedule = recommend_tasks(Q_table, st.session_state.tasks, st.session_state.hours_free)
         st.header("Updated Schedule")
         for hour, task in enumerate(schedule):
-            st.write(f"Hour {start_time + hour}: {task}")
+            st.write(f"Hour {st.session_state.start_time + hour}: {task}")
         st.header("Q-Table Visualization")
         st.image(plot_q_table(Q_table), use_column_width=True)
