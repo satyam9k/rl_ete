@@ -16,6 +16,7 @@ def implementation_page():
         min_value=0, 
         max_value=23, 
         value=9,
+        key="start_time_slider",
         help="When do you start your productive hours?"
     )
     
@@ -24,6 +25,7 @@ def implementation_page():
         min_value=0, 
         max_value=23, 
         value=17,
+        key="end_time_slider",
         help="When do your productive hours end?"
     )
     
@@ -34,25 +36,31 @@ def implementation_page():
         "Number of Tasks", 
         min_value=1, 
         max_value=10, 
-        value=3
+        value=3,
+        key="num_tasks_input"
     )
     
     tasks = []
     for i in range(num_tasks):
         with st.sidebar.expander(f"Task {i+1}"):
-            name = st.text_input(f"Task {i+1} Name")
+            name = st.text_input(
+                f"Task {i+1} Name", 
+                key=f"task_name_input_{i}"
+            )
             duration = st.number_input(
                 f"Duration (hours)", 
                 min_value=0.5, 
                 max_value=float(hours_free), 
                 value=1.0,
-                step=0.5
+                step=0.5,
+                key=f"task_duration_input_{i}"
             )
             priority = st.slider(
-                f"{name} Priority", 
+                f"{name or 'Task'} Priority", 
                 min_value=1, 
                 max_value=10, 
-                value=5
+                value=5,
+                key=f"task_priority_slider_{i}"
             )
             
             if name:
@@ -121,11 +129,11 @@ def implementation_page():
         return schedule
     
     # Return to About Page
-    if st.sidebar.button("About this Tool"):
+    if st.sidebar.button("About this Tool", key="about_button"):
         st.switch_page("main.py")
     
     # Generate Schedule Button
-    if st.sidebar.button("Generate Optimal Schedule"):
+    if st.sidebar.button("Generate Optimal Schedule", key="generate_schedule_button"):
         if tasks:
             Q_table = train_model(hours_free, tasks)
             schedule = recommend_tasks(Q_table, tasks, hours_free)
