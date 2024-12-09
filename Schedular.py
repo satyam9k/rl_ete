@@ -48,6 +48,7 @@ def train_model(hours_free, tasks):
     return Q_table
 
 
+
 # Recommend tasks based on Q-table
 def recommend_tasks(Q_table, tasks, hours_free):
     current_time = hours_free - 1
