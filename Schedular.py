@@ -128,7 +128,8 @@ elif page == "Task Scheduler":
     st.session_state.hours_free = st.session_state.end_time - st.session_state.start_time
     
     st.sidebar.header("Your Tasks")
-    num_tasks = st.sidebar.number_input("Number of Tasks", min_value=1, max_value=10, value=len(st.session_state.tasks))
+    num_tasks = st.sidebar.number_input("Number of Tasks", min_value=1, max_value=10, value=max(1, len(st.session_state.tasks)))
+
     st.session_state.tasks = []  # Reset tasks if user changes task count
     for i in range(num_tasks):
         name = st.sidebar.text_input(f"Task {i + 1} Name", value=f"Task {i + 1}" if len(st.session_state.tasks) <= i else st.session_state.tasks[i]["name"])
